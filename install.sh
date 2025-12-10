@@ -13,15 +13,24 @@ echo "[1/7] Installing dependencies..."
 apt-get update
 apt-get install -y build-essential bluez
 
+# Ensure Bluetooth isn't blocked
+rfkill unblock bluetooth
+
 echo "[2/7] Configuring boot parameters..."
 
 CONFIG="/boot/firmware/config.txt"
 [ ! -f "$CONFIG" ] && CONFIG="/boot/config.txt"
 
 if ! grep -q "dtoverlay=dwc2" "$CONFIG"; then
-    echo "" >> "$CONFIG"
-    echo "# USB Gadget mode for DS3 adapter" >> "$CONFIG"
-    echo "dtoverlay=dwc2,dr_mode=peripheral" >> "$CONFIG"
+    # Insert under [all] section to ensure it applies to all Pi models
+    if grep -q "^\[all\]" "$CONFIG"; then
+        sed -i '/^\[all\]/a dtoverlay=dwc2,dr_mode=peripheral' "$CONFIG"
+    else
+        # If no [all] section exists, add it
+        echo "" >> "$CONFIG"
+        echo "[all]" >> "$CONFIG"
+        echo "dtoverlay=dwc2,dr_mode=peripheral" >> "$CONFIG"
+    fi
     echo "Added dwc2 overlay to $CONFIG"
 fi
 
@@ -55,6 +64,7 @@ Wants=bluetooth.target
 Type=simple
 ExecStartPre=/sbin/modprobe libcomposite
 ExecStartPre=/sbin/modprobe usb_f_fs
+ExecStartPre=/usr/sbin/rfkill unblock bluetooth
 ExecStart=/opt/ds3-adapter/ds3_adapter
 Restart=always
 RestartSec=3
