@@ -8,7 +8,7 @@ If you notice something that is broken or want to request a feature that isn't i
 
 This adapter lets a DualSense controller connect to the Raspberry Pi via Bluetooth and appear to the PS3 as a genuine DualShock 3. Unlike some generic USB adapters, the PS button works because the DS3's USB protocol is fully emulated.
 
-`Currently this is only made for DualSense (PS5) controllers specifically, it's all I have access to at the moment. If you want me to add new controllers, open an issue and when I have time and we can work out getting the correct HID reports for the controller.`
+`Currently this is only made for DualSense (PS5) controllers specifically, it's all I have access to at the moment. If you want me to add new controllers, open an issue and when I have time we can work out getting the correct reports for the controller.`
 
 ## Features
 
@@ -21,14 +21,17 @@ This adapter lets a DualSense controller connect to the Raspberry Pi via Bluetoo
 - [x] Rumble/haptic feedback forwarding
 
 ### Planned
-- [ ] Web configuration interface
-- [ ] Bluetooth pairing via web UI
-- [ ] Custom button remapping
-- [ ] Macro system
-- [ ] Profile system with hotkey switching
+- [ ] Gyroscope/motion controls - `In progress`
+  - Gyroscope is working perfectly, acceleration... not so much. I found the PS5 controller acceleration xyz bytes and am successfully converting and translating it to what the ps3 should expect, but either the controller tester I am using on the ps3 isnt updating or I'm not sending them correctly, I'm gonna blame the tester.
+- [ ] Web configuration interface - `In progress`
+  - I have a basic python server working, with a few end points set up for the api needed.
+- [ ] Bluetooth pairing via web UI - `In progress`
+  - Stub coded, but UI is ready
+- [ ] Custom button remapping - `In progress`
+- [ ] Profile system with hotkey switching - `In progress`
+- [ ] Macro system - `In progress`
 - [ ] DualSense lightbar control
 - [ ] Adaptive trigger configuration
-- [ ] Gyroscope/motion controls
 - [ ] Touchpad as precision joystick
 - [ ] Controller stats (battery, latency)
 - [ ] Debug tools and logging
@@ -36,10 +39,20 @@ This adapter lets a DualSense controller connect to the Raspberry Pi via Bluetoo
 - [ ] Test setup on ESP32-S3 microcontrollers (Explore feasibility as an alternative to Raspberry Pi Zero 2W.)
 - [ ] Modularize HID reports (Enable easier integration of other generic controllers.)
 
+### Research / Test
+- Test rumble on PS2 games in PS2 mode (I don't know if there is an official name for it, cut-down, legacy, backwards compatibility mode)
+  - Without looking at it, I'm hoping the PS2 mode is just using DualShock 2 protocols and I can just test if the PS3 is sending DS2 packets and then translate and relay those packets to the DS5 controller.
+  - I really hope this works for the PSN PS2 games, as I don't have a BC PS3, and don't well to sell my car to buy one :/
+- Raspberry Pi Pico 2w support
+- ESP32-S3 support
+- Multiconsole/one controller support (There's a physical issue, with the pi only having one data usb port, but using bluetooth pairing, this *may* be possible. May be limited by concurrent connections and latency.) 
+
 ### The Goal
 
 Feature complete would look like:
+
 A ready to-go raspberry pi image for easier installation and setup.
+
 Web UI Features
  - Pair DualSense controller.
  - Display latency and battery status. (I would like to see the PS3 show the controllers battery status, but I think with how the PS3 handles controllers connected via usb,  it will always show as charging or charged status)
@@ -108,21 +121,31 @@ Uses Linux USB Gadget/ConfigFS with FunctionFS:
 
 ### DS3 Input Report Format (49 bytes)
 ```
-Byte  0:     0x01 (Report ID)
-Byte  1:     Reserved (0x00)
-Byte  2:     Select(0x01), L3(0x02), R3(0x04), Start(0x08), DPad
-Byte  3:     L2(0x01), R2(0x02), L1(0x04), R1(0x08), △(0x10), ○(0x20), ✕(0x40), □(0x80)
-Byte  4:     PS Button (0x01)
-Byte  5:     Reserved
-Bytes 6-7:   Left stick X, Y (0x00-0xFF, center 0x80)
-Bytes 8-9:   Right stick X, Y (0x00-0xFF, center 0x80)
-Bytes 10-17: D-pad pressure (up, right, down, left) + reserved
-Bytes 18-19: L2, R2 analog pressure (0x00-0xFF)
-Bytes 20-21: L1, R1 pressure
-Bytes 22-25: Triangle, Circle, Cross, Square pressure
-Bytes 26-28: Reserved
-Bytes 29-31: Battery/status (0x02, 0xEE, 0x12 for USB powered)
-Bytes 32-48: Reserved/accelerometer data
+Byte 0:       0x01 (Report ID)
+Byte 1:       Reserved (0x00)
+Byte 2:       Released (0x00), Select (0x01), L3 (0x02), R3 (0x04), Start (0x08), D Up (0x10), D Right (0x20), D Down (0x40), D Left (0x80)
+Byte 3:       Released (0x00), L2 (0x01), R2 (0x02), L1 (0x04), R1 (0x08), Triangle (0x10), Circle (0x20), Cross (0x40), Square (0x80)
+Byte 4:       Released (0x00), PS (0x01)
+Byte 5:       Reserved
+Byte 6:       Left analog stick X axis (0x00 - 0xFF)
+Byte 7:       Left analog stick Y axis (0x00 - 0xFF)
+Byte 8:       Right analog stick X axis (0x00 - 0xFF)
+Byte 9:       Right analog stick Y axis (0x00 - 0xFF)
+Bytes 10-12:  Reserved
+Bytes 13-16:  D-pad pressure (up, right, down, left) (0x00 - 0xFF)
+Bytes 17-18:  L2, R2 analog pressure (0x00-0xFF)
+Bytes 19-20:  L1, R1 pressure (0x00-0xFF)
+Bytes 21-24:  Triangle, Circle, Cross, Square pressure (0x00-0xFF)
+Bytes 25-28:  Reserved
+Byte 29:      Charge level? Dead (0x00), 1 Bar (0x01), 2 Bar (0x02), 3 Bar (0x03) (Note: this is based off of nothing, I will need to do more testing)
+Byte 30:      Charged (0xEF), Charging (0xEE), ???? (I want to see if I can flip this to 0x00 or some other value and see if the PS3 will show the battery level without the charging indicator) 
+Bytes 31-35:  ????
+Bytes 36-39:  Calibration, Firmware? The numbers, Sony! What do they mean?
+Byte 40 - 41: Accelerometer X Axis, LE 10bit unsigned
+Byte 42 - 43: Accelerometer Y Axis, LE 10bit unsigned
+Byte 44 - 45: Accelerometer Z Axis, LE 10bit unsigned
+Byte 46 - 47: Gyroscope, LE 10bit unsigned
+Byte 48:      ????
 ```
 
 ### DualSense Bluetooth HID Report Format
@@ -178,7 +201,8 @@ sudo systemctl status ds3-adapter
 sudo systemctl enable ds3-adapter
 ```
 
-### Pairing DualSense
+### Manually Pairing DualSense
+Once the web panel is up, you should only have to do this if something breaks.
 ```bash
 bluetoothctl
 > scan on
@@ -217,6 +241,6 @@ modules-load=dwc2
 - Ensure the correct hidraw device is found (should be DualSense, not touchpad)
 - Multiple hidraw devices exist for DualSense; we look for VID 054c PID 0ce6
 
-## Credits
-
-Developed through reverse engineering the DS3 USB protocol by analyzing real controller behavior and PS3 initialization sequences.
+# Credits
+[Eleccelerator](https://eleccelerator.com/wiki/index.php?title=DualShock_3)
+[Torvalds](https://github.com/torvalds/linux/blob/master/drivers/hid/hid-sony.c)
