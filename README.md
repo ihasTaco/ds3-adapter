@@ -136,9 +136,8 @@ Bytes 13-16:  D-pad pressure (up, right, down, left) (0x00 - 0xFF)
 Bytes 17-18:  L2, R2 analog pressure (0x00-0xFF)
 Bytes 19-20:  L1, R1 pressure (0x00-0xFF)
 Bytes 21-24:  Triangle, Circle, Cross, Square pressure (0x00-0xFF)
-Bytes 25-28:  Reserved
-Byte 29:      Charge level? Dead (0x00), 1 Bar (0x01), 2 Bar (0x02), 3 Bar (0x03) (Note: this is based off of nothing, I will need to do more testing)
-Byte 30:      Charged (0xEF), Charging (0xEE), ???? (I want to see if I can flip this to 0x00 or some other value and see if the PS3 will show the battery level without the charging indicator) 
+Bytes 25-29:  Reserved
+Byte 30:      Charged (0xEF), Charging (0xEE), No Connection? (0xF0), Dead (0x00, 0x01, 0x02), 1 Bar (0x03), 2 Bar (0x04), 3 Bar (0x05)
 Bytes 31-35:  ????
 Bytes 36-39:  Calibration, Firmware? The numbers, Sony! What do they mean?
 Byte 40 - 41: Accelerometer X Axis, LE 10bit unsigned
