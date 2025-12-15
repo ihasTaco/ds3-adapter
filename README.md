@@ -24,6 +24,7 @@ RosettaPad is a system that allows you to pair any (eventually) generic controll
   | Power Display | ➖ | Byte 30 controls battery status; need to wire DS5 battery to this |
   | Adaptive Triggers | ⬜ | This will not allow the dynamic adaptive triggers, just would be cool to have |
   | Touchpad as precision joystick | ⬜ | |
+  | PS button to power on PS3 | ⬜ | Discovered the PS3 USB ports aren't fully disabled in standby, they monitor for wake signals. While debugging an issue, when the Pi rebooted and sent a report, the PS3 turned on. May be possible to implement wireless power-on via PS button. 🤔 |
 
   </details>
 
@@ -35,11 +36,11 @@ RosettaPad is a system that allows you to pair any (eventually) generic controll
 
     | Feature | Status | Notes |
     |---------|--------|-------|
-    | Bluetooth Devices | ✅ | |
-    | Profiles | ✅ | |
-    | Macros | ⬜ | |
-    | Button Remapping | ⬜ | |
-    | Lightbar Customizations | ⬜ | |
+    | Bluetooth Devices | ➖ | Stubbed Frontend and API, need this to connect with the pi |
+    | Profiles | ➖ | Stubbed Frontend and API, need this to connect with the pi |
+    | Macros | ➖ | Stubbed Frontend and API, need this to connect with the pi |
+    | Button Remapping | ➖ | Stubbed Frontend and API, need this to connect with the pi |
+    | Lightbar Customizations | ➖ | Stubbed Frontend and API, need this to connect with the pi |
     | Controller Stats | ⬜ | |
     | Debugging Tools | ⬜ | |
 
@@ -52,11 +53,11 @@ RosettaPad is a system that allows you to pair any (eventually) generic controll
 
     | Feature | Status | Notes |
     |---------|--------|-------|
-    | Bluetooth Devices | ✅ | |
-    | Profiles | ✅ | |
-    | Macros | ⬜ | |
-    | Button Remapping | ⬜ | |
-    | Lightbar Customizations | ⬜ | |
+    | Bluetooth Devices | ➖ | Stubbed Frontend and API, need this to connect with the pi |
+    | Profiles | ➖ | Stubbed Frontend and API, need this to connect with the pi |
+    | Macros | ➖ | Stubbed Frontend and API, need this to connect with the pi |
+    | Button Remapping | ➖ | Stubbed Frontend and API, need this to connect with the pi |
+    | Lightbar Customizations | ➖ | Stubbed Frontend and API, need this to connect with the pi |
     | Controller Stats | ⬜ | |
     | Debugging Tools | ⬜ | |
 
