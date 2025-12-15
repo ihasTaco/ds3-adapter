@@ -263,6 +263,6 @@ After installation:
 ## Credits & Attribution
 - [Eleccelerator](https://eleccelerator.com/wiki/index.php?title=DualShock_3)
 - [Torvalds](https://github.com/torvalds/linux/blob/master/drivers/hid/hid-sony.c)
-- [Felis](https://github.com/felis/USB_Host_Shield_2.0/blob/master/PS3USB.cpp)
+- [Felis](https://github.com/felis/USB_Host_Shield_2.0/blob/master/PS3USB.cpp) - Details how the PS3 tells the DS3 to turn on Sixaxis controls (also has some details on power reporting and what bytes 29 & 31 do.
 
 If you use any of the protocol documentation or findings from this project, please provide attribution by linking back to this repository.
