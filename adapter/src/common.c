@@ -20,14 +20,54 @@ int g_ep2_fd = -1;
 int g_hidraw_fd = -1;
 
 // DS3 input report - 49 bytes, initialized to neutral state
+// Based on real DS3 capture from DS3_USB_Log_0001.txt
 uint8_t g_ds3_report[DS3_REPORT_SIZE] = {
-    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80,  // Report ID, reserved, buttons, sticks centered
-    0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // More sticks, d-pad pressure
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Trigger/button pressure
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xee, 0x12,  // Reserved, battery (USB powered)
-    0x00, 0x00, 0x00, 0x00, 0x12, 0x04, 0x77, 0x01,  // Status bytes
-    0x80, 0x01, 0xda, 0x01, 0xda, 0x01, 0x01, 0x02,  // Motion: accel X, Y, Z, gyro Z (rest values)
-    0x02                                             // Final byte
+    // Bytes 0-15
+    0x01,       // [0]  Report ID
+    0x00,       // [1]  Reserved
+    0x00,       // [2]  Buttons1: Select, L3, R3, Start, D-pad
+    0x00,       // [3]  Buttons2: L2, R2, L1, R1, Triangle, Circle, Cross, Square
+    0x00,       // [4]  PS button
+    0x00,       // [5]  Reserved
+    0x80,       // [6]  Left stick X (centered)
+    0x80,       // [7]  Left stick Y (centered)
+    0x80,       // [8]  Right stick X (centered)
+    0x80,       // [9]  Right stick Y (centered)
+    0x00,       // [10] D-pad Up pressure
+    0x00,       // [11] D-pad Right pressure
+    0x00,       // [12] D-pad Down pressure
+    0x00,       // [13] D-pad Left pressure
+    0x00,       // [14] Reserved
+    0x00,       // [15] Reserved
+    // Bytes 16-31
+    0x00,       // [16] Reserved
+    0x00,       // [17] Reserved
+    0x00,       // [18] L2 pressure
+    0x00,       // [19] R2 pressure
+    0x00,       // [20] L1 pressure
+    0x00,       // [21] R1 pressure
+    0x00,       // [22] Triangle pressure
+    0x00,       // [23] Circle pressure
+    0x00,       // [24] Cross pressure
+    0x00,       // [25] Square pressure
+    0x00,       // [26] Reserved
+    0x00,       // [27] Reserved
+    0x00,       // [28] Reserved
+    0x03,       // [29] Battery level (0x03 = 3 bars)
+    0xef,       // [30] Charging status (0xEF = USB charging)
+    0x16,       // [31] Connection status
+    // Bytes 32-48
+    0x00,       // [32] Reserved
+    0x00,       // [33] Reserved
+    0x00,       // [34] Reserved
+    0x00,       // [35] Reserved
+    0x33, 0x04, // [36-37] Unknown status (from capture)
+    0x77, 0x01, // [38-39] Unknown status (from capture)
+    0xde, 0x02, // [40-41] Accelerometer X (rest ~734 = 0x02de)
+    0x35, 0x02, // [42-43] Accelerometer Y (rest ~565 = 0x0235)
+    0x08, 0x01, // [44-45] Accelerometer Z (rest ~264 = 0x0108)
+    0x94, 0x00, // [46-47] Gyroscope Z (rest ~148 = 0x0094)
+    0x02        // [48] Final byte
 };
 pthread_mutex_t g_report_mutex = PTHREAD_MUTEX_INITIALIZER;
 

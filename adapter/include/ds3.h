@@ -79,7 +79,7 @@
 #define DS3_OFF_CIRCLE_P      23
 #define DS3_OFF_CROSS_P       24
 #define DS3_OFF_SQUARE_P      25
-#define DS3_OFF_BATTERY       29  // Battery/charging status
+#define DS3_OFF_BATTERY       30  // Battery/charging status
 #define DS3_OFF_ACCEL_X       40  // Accelerometer X (little-endian 16-bit)
 #define DS3_OFF_ACCEL_Y       42
 #define DS3_OFF_ACCEL_Z       44

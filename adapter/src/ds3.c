@@ -53,7 +53,7 @@ static uint8_t report_f8[DS3_FEATURE_REPORT_SIZE] = {
     0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-// Report 0xEF (Configuration echo)
+// Report 0xEF (Configuration) - Real DS3 returns static response, does NOT echo SET_REPORT data
 static uint8_t report_ef[DS3_FEATURE_REPORT_SIZE] = {
     0x00, 0xef, 0x04, 0x00, 0x08, 0x00, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -109,14 +109,18 @@ const uint8_t* ds3_get_feature_report(uint8_t report_id, const char** out_name) 
 void ds3_handle_set_report(uint8_t report_id, const uint8_t* data, size_t len) {
     printf("[DS3] SET_REPORT 0x%02x received (%zu bytes)\n", report_id, len);
     
-    // Currently we just acknowledge SET_REPORTs
-    // Future: handle LED configuration from 0xF4, etc.
-    
-    if (report_id == 0xF4 && len >= 5) {
+    if (report_id == DS3_REPORT_EF) {
+        // PS3 sends SET_REPORT 0xEF during init, real DS3 just ACKs and returns static response on GET
+        printf("[DS3] Config 0xEF received (byte6=0x%02x)\n", len > 6 ? data[6] : 0);
+    }
+    else if (report_id == 0xF4 && len >= 5) {
         // LED configuration report
-        // data[1-4] typically control LED bitmask
         printf("[DS3] LED config: %02x %02x %02x %02x\n", 
                data[1], data[2], data[3], data[4]);
+    }
+    else if (report_id == 0x01) {
+        // Output report (rumble/LED init) - PS3 sends this after 0xF7
+        printf("[DS3] Output report 0x01 received (rumble/LED init)\n");
     }
 }
 
