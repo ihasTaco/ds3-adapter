@@ -360,6 +360,27 @@ void* usb_input_thread(void* arg) {
     while (g_running) {
         if (g_usb_enabled) {
             ds3_copy_report(buf);
+            
+            // Debug: print full report every ~1 second (250 reports)
+            static int report_count = 0;
+            if (report_count >= 250) {
+                report_count = 0;
+                printf("[DS3 Report] 49 bytes to PS2:\n");
+                printf("00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
+                printf("-----------------------------------------------\n");
+                for (int i = 0; i < DS3_INPUT_REPORT_SIZE; i++) {
+                    if (i % 16 == 0 && i != 0) printf("%02X: ", i);
+                    printf("%02x ", buf[i]);
+                    if (i % 16 == 15 || i == DS3_INPUT_REPORT_SIZE - 1) printf("\n");
+                }
+                printf("Motion: AccelX=%02x%02x AccelY=%02x%02x AccelZ=%02x%02x GyroZ=%02x%02x\n",
+                       buf[41], buf[40], buf[43], buf[42],
+                       buf[45], buf[44], buf[47], buf[46]);
+                printf("\n");
+                fflush(stdout);
+            }
+            report_count++;
+
             write(g_ep1_fd, buf, DS3_INPUT_REPORT_SIZE);
         }
         usleep(4000);  // ~250Hz
