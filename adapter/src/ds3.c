@@ -119,7 +119,7 @@ void ds3_handle_set_report(uint8_t report_id, const uint8_t* data, size_t len) {
                data[1], data[2], data[3], data[4]);
     }
     else if (report_id == 0x01) {
-        // Output report (rumble/LED init) - PS3 sends this after 0xF7
+        // Output report (rumble/LED init) - PS3 sends this before 0xF7
         printf("[DS3] Output report 0x01 received (rumble/LED init)\n");
     }
 }
