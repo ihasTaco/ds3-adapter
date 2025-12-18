@@ -193,9 +193,9 @@ int dualsense_find_hidraw(void) {
 #define DS_OUT_MOTOR_RIGHT          6
 #define DS_OUT_MOTOR_LEFT           7
 #define DS_OUT_MIC_MUTE_LED         12
-#define DS_OUT_ADAPTIVE_TRIG_R      11
+#define DS_OUT_ADAPTIVE_TRIG_R      14
 #define DS_OUT_ADAPTIVE_TRIG_L      25
-#define DS_OUT_VALID_FLAG2          44
+#define DS_OUT_VALID_FLAG2          42
 #define DS_OUT_LIGHTBAR_PULSE       45
 #define DS_OUT_LIGHTBAR_BRIGHTNESS  46
 #define DS_OUT_PLAYER_LEDS          47
@@ -265,10 +265,7 @@ void dualsense_send_output(int fd,
     
     // Calculate CRC32
     // For BT output reports, CRC is calculated over: 0xA2 seed byte + report[0..73]
-    uint8_t crc_buf[76];
-    crc_buf[0] = report[DS_OUT_HID_DATA];
-    memcpy(&crc_buf[1], report, 75);
-    uint32_t crc = dualsense_calc_crc32(crc_buf, 76);
+    uint32_t crc = dualsense_calc_crc32(report, 75);
     
     // Store CRC at end (little-endian)
     report[75] = (crc >> 0) & 0xFF;
@@ -372,9 +369,6 @@ int dualsense_process_input(const uint8_t* buf, size_t len) {
                 g_touchpad_state.active = 0;
             }
             pthread_mutex_unlock(&g_touchpad_mutex);
-            
-            // DON'T override rx/ry here - keep the physical stick values
-            // that were read at the start of this function
         }
     }
     
