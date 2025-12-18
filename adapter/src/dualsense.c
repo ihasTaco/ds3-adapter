@@ -152,11 +152,11 @@ int dualsense_find_hidraw(void) {
 //     [41]  valid_flag2 - bit1=lightbar setup
 //     [42-43] reserved3[2]
 //     [44]  lightbar_setup (0x02 = fade in)
-//     [45]  led_brightness
-//     [46]  player_leds
-//     [47]  lightbar_red
-//     [48]  lightbar_green
-//     [49]  lightbar_blue
+//     [46]  led_brightness
+//     [47]  player_leds
+//     [48]  lightbar_red
+//     [49]  lightbar_green
+//     [50]  lightbar_blue
 //   [50-73] reserved[24]
 //   [74-77] crc32 (little-endian)
 
@@ -165,35 +165,46 @@ int dualsense_find_hidraw(void) {
 #define DS_OUTPUT_VALID0_HAPTICS            0x02
 #define DS_OUTPUT_VALID0_RIGHT_TRIGGER      0x04
 #define DS_OUTPUT_VALID0_LEFT_TRIGGER       0x08
+#define DS_OUTPUT_VALID0_HEADPHONE_VOLUME   0x10
+#define DS_OUTPUT_VALID0_SPEAKER_VOLUME     0x20
+#define DS_OUTPUT_VALID0_MIC_VOLUME         0x40
+#define DS_OUTPUT_VALID0_AUDIO_CONTROL      0x80
 
 // Valid flag 1 bits
 #define DS_OUTPUT_VALID1_MIC_MUTE_LED       0x01
 #define DS_OUTPUT_VALID1_POWER_SAVE         0x02
 #define DS_OUTPUT_VALID1_LIGHTBAR           0x04
-#define DS_OUTPUT_VALID1_PLAYER_LEDS        0x08
-#define DS_OUTPUT_VALID1_RELEASE_LED        0x10
+#define DS_OUTPUT_VALID1_RELEASE_LED        0x08
+#define DS_OUTPUT_VALID1_PLAYER_INDICATOR   0x10
+#define DS_OUTPUT_VALID1_UNKNOWN_1          0x20
+#define DS_OUTPUT_VALID1_FIRMWARE_CONTROL   0x40
+#define DS_OUTPUT_VALID1_UNKNOWN_2          0x80
 
 // Valid flag 2 bits
 #define DS_OUTPUT_VALID2_LIGHTBAR_SETUP     0x02
 
 // Byte offsets in full BT output report
-#define DS_OUT_REPORT_ID        0
-#define DS_OUT_SEQ_TAG          1
-#define DS_OUT_TAG              2
-#define DS_OUT_VALID_FLAG0      3
-#define DS_OUT_VALID_FLAG1      4
-#define DS_OUT_MOTOR_RIGHT      5
-#define DS_OUT_MOTOR_LEFT       6
-#define DS_OUT_VALID_FLAG2      41
-#define DS_OUT_LIGHTBAR_SETUP   44
-#define DS_OUT_LED_BRIGHTNESS   45
-#define DS_OUT_PLAYER_LEDS      46
-#define DS_OUT_LIGHTBAR_RED     47
-#define DS_OUT_LIGHTBAR_GREEN   48
-#define DS_OUT_LIGHTBAR_BLUE    49
+#define DS_OUT_HID_DATA             0
+#define DS_OUT_REPORT_ID            1
+#define DS_OUT_SEQ_TAG              2
+#define DS_OUT_TAG                  3
+#define DS_OUT_VALID_FLAG0          4
+#define DS_OUT_VALID_FLAG1          5
+#define DS_OUT_MOTOR_RIGHT          6
+#define DS_OUT_MOTOR_LEFT           7
+#define DS_OUT_MIC_MUTE_LED         12
+#define DS_OUT_ADAPTIVE_TRIG_R      11
+#define DS_OUT_ADAPTIVE_TRIG_L      25
+#define DS_OUT_VALID_FLAG2          44
+#define DS_OUT_LIGHTBAR_PULSE       45
+#define DS_OUT_LIGHTBAR_BRIGHTNESS  46
+#define DS_OUT_PLAYER_LEDS          47
+#define DS_OUT_LIGHTBAR_RED         48
+#define DS_OUT_LIGHTBAR_GREEN       49
+#define DS_OUT_LIGHTBAR_BLUE        50
 
 // Report size
-#define DS_OUTPUT_REPORT_BT_SIZE 78
+#define DS_OUTPUT_REPORT_BT_SIZE 79
 
 // Sequence counter for BT reports
 static uint8_t output_seq = 0;
@@ -206,23 +217,47 @@ void dualsense_send_output(int fd,
     uint8_t report[DS_OUTPUT_REPORT_BT_SIZE] = {0};
     
     // Header
+    report[DS_OUT_HID_DATA] = 0xA2;  // HID BT DATA (0xA0) | Report Type (Output 0x02)
     report[DS_OUT_REPORT_ID] = 0x31;
-    report[DS_OUT_SEQ_TAG] = (output_seq << 4) | 0x00;
-    output_seq = (output_seq + 1) & 0x0F;
+    report[DS_OUT_SEQ_TAG] = (output_seq++ << 4) | 0x00;
     report[DS_OUT_TAG] = 0x10;  // Magic tag value
     
-    // Valid flags - tell controller which features we're setting
-    report[DS_OUT_VALID_FLAG0] = DS_OUTPUT_VALID0_RUMBLE;
-    report[DS_OUT_VALID_FLAG1] = DS_OUTPUT_VALID1_LIGHTBAR | DS_OUTPUT_VALID1_PLAYER_LEDS;
-    
+    // Valid flags
+    report[DS_OUT_VALID_FLAG0] = DS_OUTPUT_VALID0_RUMBLE | DS_OUTPUT_VALID0_HAPTICS | DS_OUTPUT_VALID0_RIGHT_TRIGGER | DS_OUTPUT_VALID0_LEFT_TRIGGER | DS_OUTPUT_VALID0_HEADPHONE_VOLUME | DS_OUTPUT_VALID0_SPEAKER_VOLUME | DS_OUTPUT_VALID0_MIC_VOLUME | DS_OUTPUT_VALID0_AUDIO_CONTROL;
+    report[DS_OUT_VALID_FLAG1] = DS_OUTPUT_VALID1_MIC_MUTE_LED | DS_OUTPUT_VALID1_LIGHTBAR | DS_OUTPUT_VALID1_RELEASE_LED | DS_OUTPUT_VALID1_PLAYER_INDICATOR | DS_OUTPUT_VALID1_UNKNOWN_1 | DS_OUTPUT_VALID1_FIRMWARE_CONTROL | DS_OUTPUT_VALID1_UNKNOWN_2;
+    report[DS_OUT_VALID_FLAG2] = DS_OUTPUT_VALID2_LIGHTBAR_SETUP;
+
     // Rumble motors
     report[DS_OUT_MOTOR_RIGHT] = right_motor;
     report[DS_OUT_MOTOR_LEFT] = left_motor;
+
+    report[DS_OUT_MIC_MUTE_LED] = 0x01;
+
+    // Adaptive triggers
+    // Source: https://github.com/felis/USB_Host_Shield_2.0/blob/master/PS5Trigger.h
+    // Offset   | Name      | Description
+    // -----------------------------------------------------------
+    // 0        | mode      | Effect type
+    // 1-10     | params    | Mode specific parameters
+    //
+    // Value    | Mode      | Description 
+    // -----------------------------------------------------------
+    // 0x00     | Off       | No effect
+    // 0x01     | Rigid     | Constant resistance
+    // 0x02     | Pulse     | Vibrating/Pulsing effect
+    // 0x21     | Rigid A   | Resistance in a region
+    // 0x22     | Rigid B   | Resistance with strength
+    // 0x23     | Rigid AB  | Resistance with strength and region
+    // 0x25     | Pulse A   | Pulse in a region
+    // 0x26     | Pulse B   | Pulse with strength
+    // 0x27     | Pulse AB  | Pulse with strength and region
+
+    // report[DS_OUT_ADAPTIVE_TRIG_R] = 0x00;
+    // report[DS_OUT_ADAPTIVE_TRIG_L] = 0x00
     
     // Lightbar control
-    report[DS_OUT_VALID_FLAG2] = DS_OUTPUT_VALID2_LIGHTBAR_SETUP;
-    report[DS_OUT_LIGHTBAR_SETUP] = 0x02;  // Enable lightbar fade-in
-    report[DS_OUT_LED_BRIGHTNESS] = 0xFF;  // Full brightness
+    report[DS_OUT_LIGHTBAR_PULSE] = 0x02;           // 0x00 = No pulse, 0x01 = pulse, 0x02 = fade in
+    report[DS_OUT_LIGHTBAR_BRIGHTNESS] = 0x00;      // 0 = full, 1= medium, 2 = low
     report[DS_OUT_PLAYER_LEDS] = player_leds;
     report[DS_OUT_LIGHTBAR_RED] = led_r;
     report[DS_OUT_LIGHTBAR_GREEN] = led_g;
@@ -230,16 +265,16 @@ void dualsense_send_output(int fd,
     
     // Calculate CRC32
     // For BT output reports, CRC is calculated over: 0xA2 seed byte + report[0..73]
-    uint8_t crc_buf[75];
-    crc_buf[0] = 0xA2;  // Output report seed
-    memcpy(&crc_buf[1], report, 74);
-    uint32_t crc = dualsense_calc_crc32(crc_buf, 75);
+    uint8_t crc_buf[76];
+    crc_buf[0] = report[DS_OUT_HID_DATA];
+    memcpy(&crc_buf[1], report, 75);
+    uint32_t crc = dualsense_calc_crc32(crc_buf, 76);
     
     // Store CRC at end (little-endian)
-    report[74] = (crc >> 0) & 0xFF;
-    report[75] = (crc >> 8) & 0xFF;
-    report[76] = (crc >> 16) & 0xFF;
-    report[77] = (crc >> 24) & 0xFF;
+    report[75] = (crc >> 0) & 0xFF;
+    report[76] = (crc >> 8) & 0xFF;
+    report[77] = (crc >> 16) & 0xFF;
+    report[78] = (crc >> 24) & 0xFF;
     
     if (fd >= 0) {
         ssize_t written = write(fd, report, sizeof(report));
@@ -492,60 +527,4 @@ void* dualsense_thread(void* arg) {
     }
     
     return NULL;
-}
-
-void dualsense_send_output(int fd,
-    uint8_t right_motor, uint8_t left_motor,
-    uint8_t led_r, uint8_t led_g, uint8_t led_b,
-    uint8_t player_leds)
-{
-    static uint8_t seq = 0;
-    uint8_t report[DS_BT_OUTPUT_SIZE] = {0};
-    
-    // Build BT output report (79 bytes total)
-    report[0] = 0x31;                           // Report ID for BT
-    report[1] = (seq << 4) | 0x10;              // Sequence number + TAG (0x10 required!)
-    seq = (seq + 1) & 0x0F;
-    
-    // Valid Flag 0 (byte 2): Enable compatible vibration
-    report[2] = 0x01 | 0x02;                    // COMPATIBLE_VIBRATION | HAPTICS_SELECT
-    
-    // Valid Flag 1 (byte 3): Enable lightbar and player LEDs
-    report[3] = 0x04 | 0x10;                    // LIGHTBAR_CONTROL | PLAYER_INDICATOR_CONTROL
-    
-    // Valid Flag 2 (byte 4): Enable lightbar setup
-    report[4] = 0x02;                           // LIGHTBAR_SETUP_CONTROL_ENABLE
-    
-    // Rumble motors (bytes 5-6)
-    report[5] = right_motor;                    // Right (high frequency)
-    report[6] = left_motor;                     // Left (low frequency)
-    
-    // Lightbar setup (byte 42 in BT report = USB offset 41 + 1)
-    report[42] = 0x02;                          // LIGHTBAR_SETUP_LIGHT_OUT
-    
-    // Player LEDs brightness (byte 44)
-    report[44] = 0x02;                          // Medium brightness (0-2)
-    
-    // Player LEDs (byte 45)
-    report[45] = player_leds;
-    
-    // Lightbar RGB (bytes 46-48)
-    report[46] = led_r;
-    report[47] = led_g;
-    report[48] = led_b;
-    
-    // Calculate CRC32 (BT reports need seed byte 0xA2 prepended)
-    uint8_t crc_buf[75];
-    crc_buf[0] = 0xA2;
-    memcpy(&crc_buf[1], report, 74);
-    uint32_t crc = dualsense_calc_crc32(crc_buf, 75);
-    
-    report[74] = (crc >> 0) & 0xFF;
-    report[75] = (crc >> 8) & 0xFF;
-    report[76] = (crc >> 16) & 0xFF;
-    report[77] = (crc >> 24) & 0xFF;
-    
-    if (fd >= 0) {
-        write(fd, report, sizeof(report));
-    }
 }
