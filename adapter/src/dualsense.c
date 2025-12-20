@@ -402,8 +402,8 @@ int dualsense_process_input(const uint8_t* buf, size_t len) {
         
         // Convert to DS3 format (centered around ~512 for accel, ~498 for gyro)
         // DualSense has different scaling, so we need to convert
-        // DS3 accel: ~512 at rest, ±~400 range
-        // DualSense accel: ~0 at rest (after bias), ±~8192 range
+        // DS3 accel: ~512 at rest, Â±~400 range
+        // DualSense accel: ~0 at rest (after bias), Â±~8192 range
         
         int16_t ds3_accel_x = 512 + (ds_accel_x / 16);
         int16_t ds3_accel_y = 512 + (ds_accel_y / 16);

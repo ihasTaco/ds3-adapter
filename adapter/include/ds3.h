@@ -182,4 +182,20 @@ void ds3_update_battery_from_dualsense(uint8_t ds_battery_level, int ds_charging
  */
 void ds3_copy_report(uint8_t* out_buf);
 
+/**
+ * Update battery/connection status in DS3 report
+ * @param plugged DS3_STATUS_PLUGGED or DS3_STATUS_UNPLUGGED
+ * @param battery Battery level (DS3_BATTERY_* values)
+ * @param connection Connection mode (DS3_CONN_* values)
+ */
+void ds3_update_battery(uint8_t plugged, uint8_t battery, uint8_t connection);
+
+/**
+ * Update battery status from DualSense battery level
+ * Converts DualSense battery percentage to DS3 format
+ * @param ds_battery_level DualSense battery level (0-100)
+ * @param ds_charging 1 if charging, 0 if not
+ */
+void ds3_update_battery_from_dualsense(uint8_t ds_battery_level, int ds_charging);
+
 #endif // ROSETTAPAD_DS3_H

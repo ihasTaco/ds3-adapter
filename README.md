@@ -21,7 +21,7 @@ RosettaPad is a system that allows you to pair any (eventually) generic controll
   | Analog Sticks | ✅ | |
   | Rumble | ➖ | Tested on PS3 games, need to verify PS2 mode compatibility |
   | Acceleration & Gyro | ➖ | Gyro works. Acceleration implemented but PS3 not reading it. PS3 will not use the accelerometer data were sending it, will need to implement bluetooth pairing to get the ps3 to send the f4 report to the controller to enable sixaxis |
-  | Power Display | ➖ | Byte 30 controls battery status; need to wire DS5 battery to this |
+  | Power Display | ✅ | Byte 30 controls battery status; need to wire DS5 battery to this |
   | Adaptive Triggers | ⬜ | This will not allow the dynamic adaptive triggers, just would be cool to have |
   | Touchpad as precision joystick | ⬜ | |
   | PS button to power on PS3 | ⬜ | Discovered the PS3 USB ports aren't fully disabled in standby, they monitor for wake signals. While debugging an issue, when the Pi rebooted and sent a report, the PS3 turned on. May be possible to implement wireless power-on via PS button. 🤔 |
