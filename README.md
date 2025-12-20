@@ -20,11 +20,11 @@ RosettaPad is a system that allows you to pair any (eventually) generic controll
   | PS Button | ✅ | |
   | Analog Sticks | ✅ | |
   | Rumble | ➖ | Tested on PS3 games, need to verify PS2 mode compatibility |
-  | Acceleration & Gyro | ➖ | Gyro works. Acceleration implemented but PS3 not reading it. PS3 will not use the accelerometer data were sending it, will need to implement bluetooth pairing to get the ps3 to send the f4 report to the controller to enable sixaxis |
+  | Acceleration & Gyro | ➖ | Acceleration and gyro do not work while connected through usb only. Will need to figure out a hybrid solution for this |
   | Power Display | ✅ | Byte 30 controls battery status; need to wire DS5 battery to this |
   | Adaptive Triggers | ⬜ | This will not allow the dynamic adaptive triggers, just would be cool to have |
-  | Touchpad as precision joystick | ⬜ | |
-  | PS button to power on PS3 | ⬜ | Discovered the PS3 USB ports aren't fully disabled in standby, they monitor for wake signals. While debugging an issue, when the Pi rebooted and sent a report, the PS3 turned on. May be possible to implement wireless power-on via PS button. 🤔 |
+  | Touchpad as precision joystick | ✅ | |
+  | PS button to power on PS3 | ➖ | Standby wake only works while connected through bluetooth. will need to figure out a hybrid solution for this |
 
   </details>
 
@@ -76,9 +76,7 @@ RosettaPad is a system that allows you to pair any (eventually) generic controll
 - TAS system
   - Set up a TAS system that will let you import or record and playback controller inputs on real hardware.
 - Bluetooth Connectivity
-  - Allow the Pi to connect to console via bluetooth
-- Multiconsole/one controller support
-  - This will have a physical issue, the raspberry pi only has a single data usb, may require bluetooth to consoles, will add latency to setup
+  - Was working on this to get accelerometer and ps standby wake to work, was able to get it working but introduced a huge amount of latency (about .88s which is pretty much unusable.) In its current form bluetooth is not recommended due to ps3 buffer limitations
 - PS4 / PS5 support
   - This would be cool to have just for the macro and button remapping, will need to look into a MITM setup for authorization from console to controller but should work. Will need a Sony PS4/5 controller 
 
