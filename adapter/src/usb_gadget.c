@@ -1,6 +1,5 @@
 /*
- * RosettaPad - USB Gadget Interface
- * Handles USB FunctionFS setup and communication with PS3
+ * RosettaPad Debug Relay - USB Gadget Interface
  */
 
 #include <stdio.h>
@@ -21,18 +20,6 @@
 // USB Descriptors
 // =================================================================
 
-// HID descriptor for DS3 (embedded in interface descriptor response)
-static const uint8_t hid_descriptor[] = {
-    0x09,        // bLength
-    0x21,        // bDescriptorType (HID)
-    0x11, 0x01,  // bcdHID 1.11
-    0x00,        // bCountryCode
-    0x01,        // bNumDescriptors
-    0x22,        // bDescriptorType (Report)
-    0x94, 0x00   // wDescriptorLength (148 bytes)
-};
-
-// USB descriptors for FunctionFS
 static const struct {
     struct usb_functionfs_descs_head_v2 header;
     __le32 fs_count;
@@ -110,7 +97,6 @@ static const struct {
     },
 };
 
-// USB strings
 static const struct {
     struct usb_functionfs_strings_head header;
     struct {
@@ -125,7 +111,7 @@ static const struct {
         .lang_count = 1,
     },
     .lang0 = {
-        .code = 0x0409,  // English
+        .code = 0x0409,
         .str1 = "DS3 Input",
     },
 };
@@ -135,78 +121,62 @@ static const struct {
 // =================================================================
 
 int usb_gadget_init(void) {
-    debug_print(DBG_INIT | DBG_USB, "[USB] Initializing USB gadget...");
-    
-    // Load required kernel modules
+    debug_print(DBG_INIT, "[USB] Initializing...");
+
     system("modprobe libcomposite 2>/dev/null");
     system("modprobe usb_f_fs 2>/dev/null");
-    
-    // Create gadget if it doesn't exist
+
     if (access(USB_GADGET_PATH, F_OK) != 0) {
-        debug_print(DBG_INIT | DBG_USB, "[USB] Creating gadget configuration...");
-        
+        debug_print(DBG_INIT, "[USB] Creating gadget...");
+
         system("mkdir -p " USB_GADGET_PATH);
-        
-        // Set USB IDs (Sony DualShock 3)
+
         char cmd[256];
         snprintf(cmd, sizeof(cmd), "echo 0x%04x > %s/idVendor", DS3_USB_VID, USB_GADGET_PATH);
         system(cmd);
         snprintf(cmd, sizeof(cmd), "echo 0x%04x > %s/idProduct", DS3_USB_PID, USB_GADGET_PATH);
         system(cmd);
-        
+
         system("echo 0x0100 > " USB_GADGET_PATH "/bcdDevice");
         system("echo 0x0200 > " USB_GADGET_PATH "/bcdUSB");
-        
-        // Create strings
+
         system("mkdir -p " USB_GADGET_PATH "/strings/0x409");
         system("echo '123456' > " USB_GADGET_PATH "/strings/0x409/serialnumber");
         system("echo 'Sony' > " USB_GADGET_PATH "/strings/0x409/manufacturer");
         system("echo 'PLAYSTATION(R)3 Controller' > " USB_GADGET_PATH "/strings/0x409/product");
-        
-        // Create configuration
+
         system("mkdir -p " USB_GADGET_PATH "/configs/c.1/strings/0x409");
         system("echo 'DS3 Config' > " USB_GADGET_PATH "/configs/c.1/strings/0x409/configuration");
         system("echo 500 > " USB_GADGET_PATH "/configs/c.1/MaxPower");
-        
-        // Create FunctionFS function
+
         system("mkdir -p " USB_GADGET_PATH "/functions/ffs.usb0");
-        
-        // Link function to configuration
         system("ln -sf " USB_GADGET_PATH "/functions/ffs.usb0 " USB_GADGET_PATH "/configs/c.1/ 2>/dev/null");
     }
-    
-    // Mount FunctionFS
+
     system("mkdir -p " USB_FFS_PATH);
     system("umount " USB_FFS_PATH " 2>/dev/null");
-    
-    int ret = system("mount -t functionfs usb0 " USB_FFS_PATH);
-    if (ret != 0) {
-        debug_print(DBG_WARN | DBG_USB, "[USB] mount returned %d", ret);
-    }
-    
-    // Create IPC directory
-    system("mkdir -p /tmp/rosettapad");
-    
-    debug_print(DBG_INIT | DBG_USB, "[USB] Gadget initialized");
+    system("mount -t functionfs usb0 " USB_FFS_PATH);
+
+    debug_print(DBG_INIT, "[USB] Initialized");
     return 0;
 }
 
 int usb_gadget_write_descriptors(int ep0_fd) {
     ssize_t written;
-    
+
     written = write(ep0_fd, &usb_descriptors, sizeof(usb_descriptors));
     if (written != sizeof(usb_descriptors)) {
-        perror("[USB] Failed to write descriptors");
+        debug_print(DBG_ERROR, "[USB] Failed to write descriptors");
         return -1;
     }
-    
+
     written = write(ep0_fd, &usb_strings, sizeof(usb_strings));
     if (written != sizeof(usb_strings)) {
-        perror("[USB] Failed to write strings");
+        debug_print(DBG_ERROR, "[USB] Failed to write strings");
         return -1;
     }
-    
-    debug_print(DBG_INIT | DBG_USB, "[USB] Descriptors written to ep0");
+
+    debug_print(DBG_INIT, "[USB] Descriptors written");
     return 0;
 }
 
@@ -215,7 +185,7 @@ int usb_gadget_bind(void) {
     snprintf(cmd, sizeof(cmd), "echo '%s' > %s/UDC", USB_UDC_NAME, USB_GADGET_PATH);
     int ret = system(cmd);
     if (ret == 0) {
-        debug_print(DBG_INIT | DBG_USB, "[USB] Bound to UDC %s", USB_UDC_NAME);
+        debug_print(DBG_INIT, "[USB] Bound to UDC");
     }
     return ret == 0 ? 0 : -1;
 }
@@ -224,22 +194,21 @@ int usb_gadget_unbind(void) {
     char cmd[128];
     snprintf(cmd, sizeof(cmd), "echo '' > %s/UDC", USB_GADGET_PATH);
     system(cmd);
-    debug_print(DBG_USB, "[USB] Unbound from UDC");
+    debug_print(DBG_USB, "[USB] Unbound");
     return 0;
 }
 
 void usb_gadget_cleanup(void) {
     usb_gadget_unbind();
-    // Note: We don't remove the gadget config to allow quick restarts
 }
 
 int usb_open_endpoint(int endpoint_num) {
     char path[64];
     snprintf(path, sizeof(path), USB_FFS_PATH "/ep%d", endpoint_num);
-    
+
     int fd = open(path, O_RDWR);
     if (fd < 0) {
-        perror(path);
+        debug_print(DBG_ERROR, "[USB] Failed to open %s: %s", path, strerror(errno));
     }
     return fd;
 }
@@ -250,169 +219,126 @@ int usb_open_endpoint(int endpoint_num) {
 
 void* usb_control_thread(void* arg) {
     (void)arg;
-    
-    debug_print(DBG_INIT | DBG_USB, "[USB] Control thread started");
-    
+
+    debug_print(DBG_INIT, "[USB] Control thread started");
+
     while (g_running) {
         struct usb_functionfs_event event;
-        
+
         if (read(g_ep0_fd, &event, sizeof(event)) < 0) {
             if (errno == EINTR) continue;
-            debug_print(DBG_ERROR | DBG_USB, "[USB] read ep0 failed: %s", strerror(errno));
+            debug_print(DBG_ERROR, "[USB] read ep0 failed: %s", strerror(errno));
             break;
         }
-        
+
         switch (event.type) {
             case FUNCTIONFS_SETUP: {
-                uint8_t bmRequestType = event.u.setup.bRequestType;
                 uint8_t bRequest = event.u.setup.bRequest;
                 uint16_t wValue = event.u.setup.wValue;
                 uint16_t wLength = event.u.setup.wLength;
                 uint8_t report_id = wValue & 0xFF;
-                
-                debug_print(DBG_USB_CTRL, "[USB] SETUP: bmReqType=0x%02X bReq=0x%02X wValue=0x%04X wLen=%d",
-                            bmRequestType, bRequest, wValue, wLength);
-                
+
+                debug_print(DBG_USB, "[USB] SETUP: bReq=0x%02X wValue=0x%04X wLen=%d",
+                            bRequest, wValue, wLength);
+
                 if (bRequest == 0x0A) {
-                    // SET_IDLE - just acknowledge
-                    debug_print(DBG_HANDSHAKE, "[USB] SET_IDLE");
+                    // SET_IDLE
                     read(g_ep0_fd, NULL, 0);
                 }
                 else if (bRequest == 0x01) {
                     // GET_REPORT
                     const char* name = NULL;
                     const uint8_t* data = ds3_get_feature_report(report_id, &name);
-                    
+
                     if (data) {
-                        size_t send_len = (DS3_FEATURE_REPORT_SIZE < wLength) ? 
+                        size_t send_len = (DS3_FEATURE_REPORT_SIZE < wLength) ?
                                           DS3_FEATURE_REPORT_SIZE : wLength;
-                        debug_print(DBG_REPORTS, "[USB] GET_REPORT 0x%02X (%s) -> %zu bytes", 
-                                    report_id, name, send_len);
-                        debug_hex(DBG_REPORTS | DBG_VERBOSE, "Report data", data, send_len);
+                        debug_print(DBG_REPORTS, "[USB] GET_REPORT 0x%02X (%s)", report_id, name);
                         write(g_ep0_fd, data, send_len);
                     } else {
-                        debug_print(DBG_REPORTS, "[USB] GET_REPORT 0x%02X unknown, stalling", report_id);
-                        read(g_ep0_fd, NULL, 0);  // Stall
+                        read(g_ep0_fd, NULL, 0);
                     }
                 }
                 else if (bRequest == 0x09) {
                     // SET_REPORT
                     uint8_t buf[64] = {0};
                     ssize_t r = 0;
-                    
+
                     if (wLength > 0) {
                         r = read(g_ep0_fd, buf, wLength < 64 ? wLength : 64);
-                        debug_print(DBG_REPORTS, "[USB] SET_REPORT 0x%02X: %zd bytes", report_id, r);
-                        debug_hex(DBG_REPORTS | DBG_VERBOSE, "SET_REPORT data", buf, r);
                         if (r > 0) {
                             ds3_handle_set_report(report_id, buf, r);
                         }
                     }
-                    write(g_ep0_fd, NULL, 0);  // ACK
+                    write(g_ep0_fd, NULL, 0);
                 }
                 else {
-                    debug_print(DBG_USB_CTRL, "[USB] Unknown request 0x%02X, stalling", bRequest);
-                    read(g_ep0_fd, NULL, 0);  // Stall
+                    read(g_ep0_fd, NULL, 0);
                 }
                 break;
             }
-            
+
             case FUNCTIONFS_ENABLE:
-                debug_print(DBG_USB | DBG_INFO, "[USB] *** ENABLED - PS3 connected ***");
+                debug_print(DBG_INFO, "[USB] ENABLED - PS3 connected");
                 g_usb_enabled = 1;
                 break;
-                
+
             case FUNCTIONFS_DISABLE:
-                debug_print(DBG_USB | DBG_INFO, "[USB] *** DISABLED - PS3 disconnected ***");
+                debug_print(DBG_INFO, "[USB] DISABLED - PS3 disconnected");
                 g_usb_enabled = 0;
-                pthread_mutex_lock(&g_rumble_mutex);
-                g_rumble_right = 0;
-                g_rumble_left = 0;
-                pthread_mutex_unlock(&g_rumble_mutex);
                 break;
-                
+
             case FUNCTIONFS_UNBIND:
                 debug_print(DBG_USB, "[USB] UNBIND");
-                // Only stop everything if not switching modes
                 if (!g_mode_switching) {
                     g_running = 0;
                 }
                 break;
-                
+
             default:
-                debug_print(DBG_USB | DBG_VERBOSE, "[USB] Event type=%d", event.type);
                 break;
         }
-        
-        fflush(stdout);
     }
-    
+
     return NULL;
 }
 
 void* usb_input_thread(void* arg) {
     (void)arg;
-    
+
     g_ep1_fd = usb_open_endpoint(1);
     if (g_ep1_fd < 0) {
-        debug_print(DBG_ERROR | DBG_USB, "[USB] Failed to open ep1");
+        debug_print(DBG_ERROR, "[USB] Failed to open ep1");
         return NULL;
     }
-    
-    debug_print(DBG_INIT | DBG_USB, "[USB] Input thread started (ep1)");
-    
-    uint8_t buf[DS3_INPUT_REPORT_SIZE];
-    static int report_counter = 0;
-    static int motion_counter = 0;
-    
-    while (g_running) {
-        if (g_usb_enabled) {
-            ds3_copy_report(buf);
-            
-            // Debug: print full report periodically
-            debug_periodic(DBG_DS3_RAW | DBG_PERIODIC, &report_counter,
-                           "[USB] DS3 Report to PS3 (49 bytes)");
-            if (debug_enabled(DBG_DS3_RAW | DBG_VERBOSE)) {
-                debug_hex(DBG_DS3_RAW | DBG_VERBOSE, "DS3 Report", buf, DS3_INPUT_REPORT_SIZE);
-            }
-            
-            // Detailed motion debug
-            if (debug_enabled(DBG_MOTION)) {
-                if (++motion_counter >= 250) {
-                    motion_counter = 0;
-                    int16_t ax = buf[40] | (buf[41] << 8);
-                    int16_t ay = buf[42] | (buf[43] << 8);
-                    int16_t az = buf[44] | (buf[45] << 8);
-                    int16_t gz = buf[46] | (buf[47] << 8);
-                    debug_print(DBG_MOTION, "[USB] Motion: AccelX=%+6d AccelY=%+6d AccelZ=%+6d GyroZ=%+6d", 
-                                ax, ay, az, gz);
-                }
-            }
 
-            write(g_ep1_fd, buf, DS3_INPUT_REPORT_SIZE);
-        }
-        usleep(4000);  // ~250Hz
+    debug_print(DBG_INIT, "[USB] Input thread started");
+
+    // For relay mode, we don't send input reports via USB
+    // USB is only used for pairing
+    while (g_running) {
+        usleep(100000);
     }
-    
+
     return NULL;
 }
 
 void* usb_output_thread(void* arg) {
     (void)arg;
-    
+
     g_ep2_fd = usb_open_endpoint(2);
     if (g_ep2_fd < 0) {
-        debug_print(DBG_ERROR | DBG_USB, "[USB] Failed to open ep2");
+        debug_print(DBG_ERROR, "[USB] Failed to open ep2");
         return NULL;
     }
-    
-    debug_print(DBG_INIT | DBG_USB, "[USB] Output thread started (ep2)");
-    
+
+    debug_print(DBG_INIT, "[USB] Output thread started");
+
     uint8_t buf[EP_MAX_PACKET];
-    
+
     while (g_running) {
         ssize_t n = read(g_ep2_fd, buf, sizeof(buf));
-        
+
         if (n <= 0) {
             if (errno == EAGAIN) {
                 usleep(1000);
@@ -420,34 +346,10 @@ void* usb_output_thread(void* arg) {
             }
             continue;
         }
-        
-        debug_hex(DBG_USB_DATA | DBG_VERBOSE, "PS3 output report", buf, n);
-        
-        // PS3 output report format:
-        // buf[0] = report ID (usually 0x01)
-        // buf[1] = duration for weak motor
-        // buf[2] = power for weak motor (0 or 1)
-        // buf[3] = duration for strong motor
-        // buf[4] = power for strong motor (0-255)
-        
-        if (n >= 6) {
-            uint8_t right_power = buf[3];  // Weak motor (on/off)
-            uint8_t left_power = buf[5];   // Strong motor (variable)
-            
-            // Convert DS3 rumble to DualSense
-            // DS3 weak motor: 0 or 1 -> DS full strength if on
-            // DS3 strong motor: 0-255 -> DS 0-255
-            uint8_t ds_right = right_power ? 0xFF : 0x00;
-            uint8_t ds_left = left_power;
-            
-            debug_print(DBG_RUMBLE, "[USB] PS3 rumble -> DualSense: right=%d left=%d", ds_right, ds_left);
-            
-            pthread_mutex_lock(&g_rumble_mutex);
-            g_rumble_right = ds_right;
-            g_rumble_left = ds_left;
-            pthread_mutex_unlock(&g_rumble_mutex);
-        }
+
+        // Log any output from PS3 during USB mode
+        debug_print(DBG_USB, "[USB] Output report (%zd bytes)", n);
     }
-    
+
     return NULL;
 }
