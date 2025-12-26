@@ -2,17 +2,17 @@
 
 **Universal Controller Adapter for PlayStation Consoles**
 
-RosettaPad lets you use modern controllers (DualSense, and eventually others) on older PlayStation consoles with full feature support-including the PS button, rumble, and motion controls that typically don't work with third-party adapters.
+RosettaPad lets you use modern controllers (DualSense, and eventually others) on older PlayStation consoles with full feature support, including the PS button, rumble, and motion controls that typically don't work with third-party adapters.
 
-> **Current Status:** Actively developed for DualSense → PS3. The project is in a functional state but the maintainer is taking a break. Bug reports welcome; new features will be addressed as time permits.
+> **Current Status:** Actively developed for DualSense -> PS3. The project is in a functional state but the maintainer is taking a break. Bug reports welcome; new features will be addressed as time permits.
 
 ---
 
 ## Why RosettaPad?
 
-When you connect a DualSense to a PS3, it *technically* works-but the PS3 doesn't know how to talk to it properly. The PS button does nothing, rumble is silent, and motion controls are dead.
+When you connect a DualSense to a PS3, it *technically* works, but the PS3 doesn't know how to talk to it properly. The PS button does nothing, rumble is silent, and motion controls are dead.
 
-RosettaPad solves this by acting as a translator: it presents itself to the PS3 as a genuine DualShock 3 while accepting input from your modern controller. No authentication cracking required-just proper protocol emulation.
+RosettaPad solves this by acting as a translator: it presents itself to the PS3 as a genuine DualShock 3 while accepting input from your modern controller. No authentication cracking required, just proper protocol emulation.
 
 ---
 
@@ -51,7 +51,7 @@ RosettaPad solves this by acting as a translator: it presents itself to the PS3 
 
 ## Hardware Requirements
 
-- **Raspberry Pi Zero 2W**
+- **Raspberry Pi Zero 2W (or Zero W)**
 - **USB data cable** - connects Pi's data port to PS3
 - **USB power cable** - connects Pi's power port to a power source
 - **DualSense controller** - paired via Bluetooth
