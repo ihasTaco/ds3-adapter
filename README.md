@@ -4,7 +4,8 @@
 
 RosettaPad lets you use modern controllers (DualSense, and eventually others) on older PlayStation consoles with full feature support, including the PS button, rumble, and motion controls that typically don't work with third-party adapters.
 
-> **Current Status:** Actively developed for DualSense -> PS3. The project is in a functional state but the maintainer is taking a break. Bug reports welcome; new features will be addressed as time permits.
+> [!NOTE]
+> **Current Status**: Development is active for DualSense -> PS3. Work is underway on a Pico 2W port, which may become the primary codebase due to several issues with the Zero 2W that are difficult or impossible to resolve because of its architectural limitations.
 
 ---
 
@@ -22,14 +23,14 @@ RosettaPad solves this by acting as a translator: it presents itself to the PS3 
 
 | Feature | Status | Notes |
 |---------|:------:|-------|
-| All Buttons | ✅ | Face, D-pad, shoulders, triggers, sticks, PS button |
-| Analog Sticks | ✅ | Full 8-bit precision |
-| Analog Triggers | ✅ | Pressure-sensitive L2/R2 |
-| Rumble | ✅ | Both motors, tested on PS3 games |
-| Battery Display | ✅ | Shows DualSense battery on PS3 UI |
-| Touchpad as Right Stick | ✅ | Swipe to control camera |
-| Motion Controls | ✅ | Accelerometer + gyroscope via Bluetooth |
-| PS3 Wake from Standby | ✅ | Press PS button to wake console |
+| All Buttons | ✅ | Face, D-pad, shoulders, triggers, sticks, PS button. |
+| Analog Sticks | ✅ | Full 8-bit precision. |
+| Analog Triggers | ✅ | Pressure-sensitive L2/R2. |
+| Rumble | ✅ | Both motors, tested on PS3 games. |
+| Battery Display | ✅ | Shows DualSense battery on PS3 UI. |
+| Touchpad as Right Stick | ℹ️ | Works™ but isn't as precise as I'd like it. |
+| Motion Controls | ℹ️ | Works™ but has some issues with the calibration that causes extreme values. Which just makes it impossible to use. Only works when the pi is connected to the ps3 via bluetooth. |
+| PS3 Wake from Standby | ℹ️ | Works™ but a little too well, it is recommended not to use this, as it will make it so you can never turn off the ps3 or it will just turn back on. |
 
 ### In Progress
 
